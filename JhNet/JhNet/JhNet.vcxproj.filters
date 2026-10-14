@@ -1,0 +1,111 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Main">
+      <UniqueIdentifier>{a7552e26-83d0-477a-ab7a-91bc39782869}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Common">
+      <UniqueIdentifier>{7a5688ea-9c5c-4c38-b3db-a7f7b8a5a798}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Export">
+      <UniqueIdentifier>{3e78e059-9c09-4fa0-a65d-78336c80dedc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Managers">
+      <UniqueIdentifier>{3506ebcf-73a8-4997-8f75-873dd24441a5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Memory">
+      <UniqueIdentifier>{2ebb7048-17b6-457f-8eb5-2dfeb884a820}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Network">
+      <UniqueIdentifier>{c64f099d-cb24-448c-be26-c169e208cf47}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utils">
+      <UniqueIdentifier>{8118040f-2648-4cf6-b492-4fb63cc9c860}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="framework.h">
+      <Filter>Main</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="CorePch.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Global.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="MemoryManager.h">
+      <Filter>Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="NetManager.h">
+      <Filter>Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="Allocator.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="MemoryPool.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="OverlappedEx.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="RingBuffer.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="Session.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="SpinLock.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Iocp.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="JhNet_Include.h">
+      <Filter>Export</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="dllmain.c">
+      <Filter>Main</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.c">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="CorePch.c">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="MemoryManager.c">
+      <Filter>Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="NetManager.c">
+      <Filter>Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="Allocator.c">
+      <Filter>Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="MemoryPool.c">
+      <Filter>Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="OverlappedEx.c">
+      <Filter>Network</Filter>
+    </ClCompile>
+    <ClCompile Include="RingBuffer.c">
+      <Filter>Network</Filter>
+    </ClCompile>
+    <ClCompile Include="Session.c">
+      <Filter>Network</Filter>
+    </ClCompile>
+    <ClCompile Include="SpinLock.c">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Iocp.c">
+      <Filter>Network</Filter>
+    </ClCompile>
+    <ClCompile Include="JhNet_Include.c">
+      <Filter>Export</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
