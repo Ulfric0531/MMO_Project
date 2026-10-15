@@ -33,7 +33,7 @@ typedef struct Session
 	SRWLOCK				_emergencyBufferLock;
 } Session;
 
-void Session_Init(Session* session, SOCKET socket, SOCKADDR_IN addr, DWORD64 id);
+void Session_Init(Session* session, SOCKET socket, SOCKADDR_IN addr, DWORD64 id, DWORD index);
 void Session_Release(Session* session);
 
 void Session_IncreaseRefCount(Session* session);

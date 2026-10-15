@@ -125,11 +125,6 @@ BOOL RingBuffer_MoveFront(RingBuffer* ringBuffer, DWORD elementSize)
 	LONG rear = InterlockedCompareExchange(&(ringBuffer->_rear), 0, 0);
 	DWORD maxBufferSize = ringBuffer->_maxBufferSize;
 
-	if (RingBuffer_GetCurrentSize(ringBuffer, front, rear) <= 0)
-	{
-		return FALSE;
-	}
-
 	if (RingBuffer_GetCurrentSize(ringBuffer, front, rear) < elementSize)
 	{
 		return FALSE;
@@ -163,7 +158,7 @@ DWORD RingBuffer_DirectEnqueueSize(RingBuffer* ringBuffer, LONG front, LONG rear
 	{
 		return maxBufferSize - rear;
 	}
-
+	
 	return front - rear - 1;
 }
 
@@ -177,4 +172,14 @@ DWORD RingBuffer_DirectDequeueSize(RingBuffer* ringBuffer, LONG front, LONG rear
 	}
 
 	return maxBufferSize - front;
+}
+
+LONG RingBuffer_GetFrontIndex(RingBuffer* ringBuffer)
+{
+	return InterlockedCompareExchange(&(ringBuffer->_front), 0, 0);
+}
+
+LONG RingBuffer_GetRearIndex(RingBuffer* ringBuffer)
+{
+	return InterlockedCompareExchange(&(ringBuffer->_rear), 0, 0);
 }

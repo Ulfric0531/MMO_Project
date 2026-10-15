@@ -1,5 +1,5 @@
 #pragma once
-
+#define NONE -1
 typedef struct RingBuffer
 {
 	BYTE*			_buffer;
@@ -21,3 +21,5 @@ BOOL	RingBuffer_MoveFront(RingBuffer* ringBuffer, DWORD elementSize);
 BOOL	RingBuffer_MoveRear(RingBuffer* ringBuffer, DWORD elementSize);
 DWORD	RingBuffer_DirectEnqueueSize(RingBuffer* ringBuffer, LONG front, LONG rear);
 DWORD	RingBuffer_DirectDequeueSize(RingBuffer* ringBuffer, LONG front, LONG rear);
+LONG	RingBuffer_GetFrontIndex(RingBuffer* ringBuffer);
+LONG	RingBuffer_GetRearIndex(RingBuffer* ringBuffer);
