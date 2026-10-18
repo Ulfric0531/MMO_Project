@@ -12,7 +12,7 @@ typedef enum
 } IoType;
 
 #include "Allocator.h"
-
+#include "SpinLock.h"
 #include <stdlib.h>
 #include <WinSock2.h>
 #include <MSWSock.h>
@@ -25,6 +25,9 @@ typedef enum
 #include "Iocp.h"
 #include "RingBuffer.h"
 #include "Session.h"
+#include "MemoryPool.h"
+#include "MemoryManager.h"
+#include "Allocator.h"
 
 #include <stdio.h>
 

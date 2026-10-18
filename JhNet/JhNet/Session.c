@@ -43,13 +43,15 @@ void Session_DecreaseRefCount(Session* session)
 
 void Session_RecvPost(Session* session)
 {
-	if (InterlockedCompareExchange(&(session->_isConnected), 0, 0) == 0)
+	if (InterlockedCompareExchangeNoFence(&(session->_isConnected), 0, 0) == 0)
 	{
 		return;
 	}
 
-	INT errCode = 0;
-	INT retVal = 0;
+	Session_IncreaseRefCount(session);
+
+	int errCode = 0;
+	int retVal = 0;
 	DWORD numOfBytes = 0;
 	DWORD flags = 0;
 
@@ -62,28 +64,85 @@ void Session_RecvPost(Session* session)
 	WSABUF wsabuf[2];
 	wsabuf[0].buf = session->_recvBuffer._buffer + rear;
 	wsabuf[0].len = directEnqueueSize;
-	wsabuf[1].buf = 0;
+	wsabuf[1].buf = session->_recvBuffer._buffer;
 	wsabuf[1].len = remainSize;
 
-	retVal = WSARecv(_socket, wsabuf, 2, &numOfBytes, &flags, reinterpret_cast<LPOVERLAPPED>(&_recvOverlap), nullptr);
+	retVal = WSARecv(session->_socket, wsabuf, 2, &numOfBytes, &flags, (LPOVERLAPPED)(&session->_recvOverlap), NULL);
 	if (retVal == SOCKET_ERROR)
 	{
 		errCode = WSAGetLastError();
 		if (errCode != WSA_IO_PENDING)
 		{
-			DecreaseRefCount();
+			Session_DisconnectPost(session);
 
-			DisconnectPost();
+			Session_DecreaseRefCount(session);
 		}
 	}
 }
 
 void Session_TrySendPost(Session* session, BYTE* buffer, DWORD size)
 {
+	BOOL enqueueResult;
+	EmergencyBuffer* sendBuffer;
+
+	if (InterlockedCompareExchangeNoFence(&session->_isConnected, 0, 0) == 0)
+	{
+		return;
+	}
+
+	AcquireSRWLockExclusive(&session->_sendBufferLock);
+	enqueueResult = RingBuffer_Enqueue(&session->_sendBuffer, buffer, size);
+	ReleaseSRWLockExclusive(&session->_sendBufferLock);
+
+	if (enqueueResult == FALSE)
+	{
+		sendBuffer = PoolAlloc(sizeof(EmergencyBuffer));
+		sendBuffer->_size = size;
+		sendBuffer->_buffer = PoolAlloc(sizeof(size));
+		memcpy_s(sendBuffer->_buffer, size, buffer, size);
+
+		AcquireSRWLockExclusive(&session->_emergencyBufferLock);
+		if (session->_emergencyBufferHead == NULL)
+		{
+			session->_emergencyBufferHead = sendBuffer;
+		}
+		else
+		{
+			session->_emergencyBufferTail->_next = sendBuffer;
+		}
+		session->_emergencyBufferTail = sendBuffer;
+		ReleaseSRWLockExclusive(&session->_emergencyBufferLock);
+	}
+
+	if (InterlockedCompareExchangeNoFence(&session->_onSend, 1, 0) == 1)
+	{
+		return;
+	}
+
+	Session_SendPost(session);
+	return;
 }
 
 void Session_SendPost(Session* session)
 {
+	if (InterlockedCompareExchangeNoFence(&session->_isConnected, 0, 0) == 0)
+	{
+		return;
+	}
+
+	Session_IncreaseRefCount(session);
+
+	int erroCode;
+	int retVal;
+	DWORD idx;
+	DWORD directEnqueueSize;
+	DWORD remainSize;
+	DWORD numOfBytes;
+	DWORD flags;
+	DWORD count = 0;
+	OverlappedEx_Clear(&session->_sendOverlap);
+
+
 }
 
 void Session_DisconnectPost(Session* session)

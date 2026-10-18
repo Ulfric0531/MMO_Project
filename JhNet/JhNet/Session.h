@@ -5,9 +5,9 @@ typedef struct RingBuffer RingBuffer;
 
 typedef struct EmergencyBuffer
 {
-	BYTE*				buffer;
-	DWORD				size;
-	EmergencyBuffer*	next;
+	BYTE*				_buffer;
+	DWORD				_size;
+	EmergencyBuffer*	_next;
 } EmergencyBuffer;
 
 typedef struct Session
