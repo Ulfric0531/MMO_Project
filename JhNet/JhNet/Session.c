@@ -132,16 +132,61 @@ void Session_SendPost(Session* session)
 
 	Session_IncreaseRefCount(session);
 
-	int erroCode;
+	int errCode;
 	int retVal;
-	DWORD idx;
-	DWORD directEnqueueSize;
+	DWORD idx = 0;
+	DWORD directDequeueSize;
 	DWORD remainSize;
 	DWORD numOfBytes;
 	DWORD flags;
 	DWORD count = 0;
 	OverlappedEx_Clear(&session->_sendOverlap);
 
+	AcquireSRWLockExclusive(&session->_emergencyBufferLock);
+	if (&session->_emergencyBufferHead != NULL)
+	{
+		count = session->_emergencyBufferCount;
+
+		session->_sendOverlap._onFlightList = session->_emergencyBufferHead;
+		session->_emergencyBufferHead = NULL;
+		session->_emergencyBufferTail = NULL;
+		session->_emergencyBufferCount = 0;
+	}
+	ReleaseSRWLockExclusive(&session->_emergencyBufferLock);
+
+	WSABUF* wsaBuf = (WSABUF*)(PoolAlloc(sizeof(WSABUF) * count + 2));
+	EmergencyBuffer* onFlightBuffer = session->_sendOverlap._onFlightList;
+	while (onFlightBuffer != NULL)
+	{
+		wsaBuf[idx].buf = onFlightBuffer->_buffer;
+		wsaBuf[idx].len = onFlightBuffer->_size;
+		onFlightBuffer = onFlightBuffer->_next;
+		++idx;
+	}
+
+	LONG front = RingBuffer_GetFrontIndex(&session->_sendBuffer);
+	LONG rear = RingBuffer_GetRearIndex(&session->_sendBuffer);
+	directDequeueSize = RingBuffer_DirectDequeueSize(&session->_sendBuffer, front, rear);
+	remainSize = RingBuffer_GetCurrentSize(&session->_sendBuffer, front, rear) - directDequeueSize;
+
+	wsaBuf[idx].buf = session->_sendBuffer._buffer + front;
+	wsaBuf[idx].len = directDequeueSize;
+	wsaBuf[idx + 1].buf = session->_sendBuffer._buffer;
+	wsaBuf[idx + 1].len = remainSize;
+
+	retVal = WSASend(session->_socket, wsaBuf, count + 2, &numOfBytes, &flags, (LPOVERLAPPED)(&session->_sendOverlap), NULL);
+	PoolFree(wsaBuf);
+
+	if (retVal == SOCKET_ERROR)
+	{
+		errCode = WSAGetLastError();
+		if (errCode != WSA_IO_PENDING)
+		{
+			Session_DisconnectPost(session);
+
+			Session_DecreaseRefCount(session);
+		}
+	}
 
 }
 
