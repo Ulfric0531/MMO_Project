@@ -154,7 +154,7 @@ DWORD RingBuffer_DirectEnqueueSize(RingBuffer* ringBuffer, LONG front, LONG rear
 {
 	DWORD maxBufferSize = ringBuffer->_maxBufferSize;
 
-	if (front <= rear)
+	if (front < rear)
 	{
 		return maxBufferSize - rear;
 	}

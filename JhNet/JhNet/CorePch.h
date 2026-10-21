@@ -31,9 +31,9 @@ typedef enum
 
 #include <stdio.h>
 
-/*
+
 extern LPFN_ACCEPTEX		AcceptEx;
 extern LPFN_CONNECTEX		ConnectEx;
 extern LPFN_DISCONNECTEX	DisconnectEx;
-*/
+
 

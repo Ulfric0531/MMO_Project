@@ -192,6 +192,26 @@ void Session_SendPost(Session* session)
 
 void Session_DisconnectPost(Session* session)
 {
+	if (InterlockedCompareExchangeNoFence(&session->_isConnected, 0, 1) != 1)
+	{
+		return;
+	}
+	Session_IncreaseRefCount(session);
+	int errCode;
+	int retVal;
+	DWORD numOfBytes;
+	DWORD flags;
+
+	retVal = DisconnectEx(session->_socket, &session->_disconnectOverlap, flags, 0);
+	if (retVal == SOCKET_ERROR)
+	{
+		errCode = WSAGetLastError();
+		if (errCode != WSA_IO_PENDING)
+		{
+			closesocket(session->_socket);
+			Session_DecreaseRefCount(session);
+		}
+	}
 }
 
 void Session_RecvComplete(Session* session, DWORD completedBytes, BOOL isIoCanceled)
