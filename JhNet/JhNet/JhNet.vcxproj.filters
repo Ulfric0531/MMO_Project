@@ -10,9 +10,6 @@
     <Filter Include="Export">
       <UniqueIdentifier>{3e78e059-9c09-4fa0-a65d-78336c80dedc}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Managers">
-      <UniqueIdentifier>{3506ebcf-73a8-4997-8f75-873dd24441a5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Memory">
       <UniqueIdentifier>{2ebb7048-17b6-457f-8eb5-2dfeb884a820}</UniqueIdentifier>
     </Filter>
@@ -36,12 +33,6 @@
     <ClInclude Include="Global.h">
       <Filter>Common</Filter>
     </ClInclude>
-    <ClInclude Include="MemoryManager.h">
-      <Filter>Managers</Filter>
-    </ClInclude>
-    <ClInclude Include="NetManager.h">
-      <Filter>Managers</Filter>
-    </ClInclude>
     <ClInclude Include="Allocator.h">
       <Filter>Memory</Filter>
     </ClInclude>
@@ -54,17 +45,23 @@
     <ClInclude Include="RingBuffer.h">
       <Filter>Network</Filter>
     </ClInclude>
-    <ClInclude Include="Session.h">
-      <Filter>Network</Filter>
-    </ClInclude>
     <ClInclude Include="SpinLock.h">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Iocp.h">
-      <Filter>Network</Filter>
-    </ClInclude>
     <ClInclude Include="JhNet_Include.h">
       <Filter>Export</Filter>
+    </ClInclude>
+    <ClInclude Include="Peer.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="JhNet.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="MemoryManager.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="ErrorHandler.h">
+      <Filter>Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -76,12 +73,6 @@
     </ClCompile>
     <ClCompile Include="CorePch.c">
       <Filter>Common</Filter>
-    </ClCompile>
-    <ClCompile Include="MemoryManager.c">
-      <Filter>Managers</Filter>
-    </ClCompile>
-    <ClCompile Include="NetManager.c">
-      <Filter>Managers</Filter>
     </ClCompile>
     <ClCompile Include="Allocator.c">
       <Filter>Memory</Filter>
@@ -95,17 +86,20 @@
     <ClCompile Include="RingBuffer.c">
       <Filter>Network</Filter>
     </ClCompile>
-    <ClCompile Include="Session.c">
-      <Filter>Network</Filter>
-    </ClCompile>
     <ClCompile Include="SpinLock.c">
       <Filter>Utils</Filter>
     </ClCompile>
-    <ClCompile Include="Iocp.c">
-      <Filter>Network</Filter>
-    </ClCompile>
     <ClCompile Include="JhNet_Include.c">
       <Filter>Export</Filter>
+    </ClCompile>
+    <ClCompile Include="Peer.c">
+      <Filter>Network</Filter>
+    </ClCompile>
+    <ClCompile Include="JhNet.c">
+      <Filter>Network</Filter>
+    </ClCompile>
+    <ClCompile Include="MemoryManager.c">
+      <Filter>Memory</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

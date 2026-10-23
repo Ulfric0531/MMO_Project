@@ -8,7 +8,8 @@ typedef enum
 	IOTYPE_RECV,
 	IOTYPE_SEND,
 	IOTYPE_ACCEPT,
-	IOTYPE_DISCONNECT
+	IOTYPE_DISCONNECT,
+	IOTYPE_CONNECT
 } IoType;
 
 #include "Allocator.h"
@@ -22,18 +23,23 @@ typedef enum
 #pragma comment(lib, "ws2_32.lib")
 
 #include "OverlappedEx.h"
-#include "Iocp.h"
 #include "RingBuffer.h"
-#include "Session.h"
+#include "Peer.h"
+#include "JhNet.h"
 #include "MemoryPool.h"
 #include "MemoryManager.h"
 #include "Allocator.h"
 
 #include <stdio.h>
 
+typedef enum NetMode
+{
+	NETMODE_CLIENT,
+	NETMODE_SERVER
+} NetMode;
 
-extern LPFN_ACCEPTEX		AcceptEx;
-extern LPFN_CONNECTEX		ConnectEx;
-extern LPFN_DISCONNECTEX	DisconnectEx;
+extern LPFN_ACCEPTEX		JhNet_AcceptEx;
+extern LPFN_CONNECTEX		JhNet_ConnectEx;
+extern LPFN_DISCONNECTEX	JhNet_DisconnectEx;
 
 

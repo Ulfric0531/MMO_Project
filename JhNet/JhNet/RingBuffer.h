@@ -1,5 +1,8 @@
 #pragma once
 #define NONE -1
+
+
+
 typedef struct RingBuffer
 {
 	BYTE*			_buffer;
