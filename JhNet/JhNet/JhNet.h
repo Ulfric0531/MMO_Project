@@ -24,16 +24,20 @@ typedef struct JhNet
 } JhNet;
 
 JhNet*		JhNet_MakeNetManager(WCHAR* serverIp, WORD serverPort, DWORD threadCount, NetMode netMode);
-DWORD64		JhNet_AddPeer(JhNet* netManager, Peer* peer);
-void		JhNet_DeletePeer(JhNet* netManager, DWORD peerIndex, DWORD64 peerId);
+BOOL		JhNet_AddPeer(JhNet* netManager, Peer* peer);
+BOOL		JhNet_DeletePeer(JhNet* netManager, DWORD peerIndex, DWORD64 peerId);
 void		JhNet_InitWinSockEx();
+
 void		JhNet_RecvPost(Peer* peer);
 void		JhNet_TrySendPost(Peer* peer, BYTE* buffer, DWORD size);
 void		JhNet_SendPost(Peer* peer);
 void		JhNet_ConnectPost(Peer* peer);
 void		JhNet_DisconnectPost(Peer* peer);
+void		JhNet_AcceptPost();
 void		JhNet_RecvComplete(Peer* peer, DWORD completedBytes, BOOL isIoCanceled);
 void		JhNet_SendComplete(Peer* peer, DWORD completedBytes, BOOL isIoCanceled);
 void		JhNet_ConnectComplete(Peer* peer);
 void		JhNet_DisconnectComplete(Peer* peer);
+void		JhNet_AcceptComplete();
+
 void		JhNet_DispatchIocp(HANDLE iocpHandle);

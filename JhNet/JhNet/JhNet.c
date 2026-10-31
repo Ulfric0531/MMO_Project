@@ -78,13 +78,47 @@ JhNet* JhNet_MakeNetManager(WCHAR* serverIp, WORD serverPort, DWORD threadCount,
 	
 }
 
-DWORD64 JhNet_AddPeer(JhNet* netManager, Peer* peer)
+BOOL JhNet_AddPeer(JhNet* netManager, Peer* peer)
 {
-	return 0;
+	BOOL retVal = FALSE;
+	AcquireSRWLockExclusive(&netManager->_peerListLock);
+	for (DWORD i = 0; i < netManager->_maxPeerCount; ++i)
+	{
+		if (netManager->_peerList[i] == NULL)
+		{
+			netManager->_peerList[i] = peer;
+			peer->_index = i;
+			peer->_id = g_peerId;
+			retVal = TRUE;
+			++g_peerId;
+			++netManager->_currentPeerCount;
+			goto exit;
+		}
+	}
+exit:
+	ReleaseSRWLockExclusive(&netManager->_peerListLock);
+	return retVal;
 }
 
-void JhNet_DeletePeer(JhNet* netManager, DWORD peerIndex, DWORD64 peerId)
+BOOL JhNet_DeletePeer(JhNet* netManager, DWORD peerIndex, DWORD64 peerId)
 {
+	BOOL retVal = FALSE;
+	AcquireSRWLockExclusive(&netManager->_peerListLock);
+	Peer* peer = netManager->_peerList[peerIndex];
+	if (peer == NULL || peer->_id != peerId)
+	{
+		goto exit;
+	}
+	netManager->_peerList[peerIndex] = NULL;
+	--netManager->_currentPeerCount;
+	retVal = TRUE;
+exit:
+	ReleaseSRWLockExclusive(&netManager->_peerListLock);
+	if (retVal == TRUE)
+	{
+		PoolFree(peer);
+	}
+	return retVal;
 }
 
 void JhNet_InitWinSockEx()
@@ -247,6 +281,7 @@ void JhNet_SendPost(Peer* peer)
 
 void JhNet_ConnectPost(Peer* peer)
 {
+	if ()
 }
 
 void JhNet_DisconnectPost(Peer* peer)
@@ -271,6 +306,10 @@ void JhNet_DisconnectPost(Peer* peer)
 			Peer_DecRefCount(peer);
 		}
 	}
+}
+
+void JhNet_AcceptPost()
+{
 }
 
 void JhNet_RecvComplete(Peer* peer, DWORD completedBytes, BOOL isIoCanceled)
@@ -327,6 +366,10 @@ void JhNet_DisconnectComplete(Peer* peer)
 	Peer_DecRefCount(peer);
 }
 
+void JhNet_AcceptComplete()
+{
+}
+
 void JhNet_DispatchIocp(HANDLE iocpHandle)
 {
 	DWORD errCode;
@@ -341,7 +384,7 @@ void JhNet_DispatchIocp(HANDLE iocpHandle)
 		errCode = GetLastError();
 		if (ioEvent == NULL)
 		{
-			wprintf(L"Ovlerapped is nullptr in GQCS return : %d\n", errCode);
+			wprintf(L"Overlapped is NULL in GQCS return : %d\n", errCode);
 			// TODO : 서버 종료
 			return;
 		}
@@ -350,7 +393,50 @@ void JhNet_DispatchIocp(HANDLE iocpHandle)
 			if (errCode != ERROR_OPERATION_ABORTED)
 			{
 				JhNet_DisconnectPost(peer);
+				return;
 			}
+
+			switch (ioEvent->_ioType)
+			{
+			case IOTYPE_RECV:
+				JhNet_RecvComplete(peer, completedBytes, TRUE);
+				break;
+			case IOTYPE_SEND:
+				JhNet_SendComplete(peer, completedBytes, TRUE);
+				break;
+			case IOTYPE_ACCEPT:
+				break;
+			case IOTYPE_DISCONNECT:
+				JhNet_DisconnectComplete(peer);
+				break;
+			case IOTYPE_CONNECT:
+				JhNet_ConnectComplete(peer);
+				break;
+			default:
+				break;
+			}
+		}
+	}
+	else
+	{
+		switch (ioEvent->_ioType)
+		{
+		case IOTYPE_RECV:
+			JhNet_RecvComplete(peer, completedBytes, FALSE);
+			break;
+		case IOTYPE_SEND:
+			JhNet_SendComplete(peer, completedBytes, FALSE);
+			break;
+		case IOTYPE_ACCEPT:
+			break;
+		case IOTYPE_DISCONNECT:
+			JhNet_DisconnectComplete(peer);
+			break;
+		case IOTYPE_CONNECT:
+			JhNet_ConnectComplete(peer);
+			break;
+		default:
+			break;
 		}
 	}
 }

@@ -6,6 +6,7 @@ typedef enum IoType IoType;
 
 typedef struct OverlappedEx
 {
+	OVERLAPPED			_overlapped;
 	IoType				_ioType;
 	EmergencyBuffer*	_onFlightList;
 } OverlappedEx;

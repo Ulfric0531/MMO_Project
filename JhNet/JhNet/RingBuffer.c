@@ -5,12 +5,12 @@ void RingBuffer_Init(RingBuffer* ringBuffer, DWORD bufferSize)
 	ringBuffer->_front = 0;
 	ringBuffer->_rear = 0;
 	ringBuffer->_maxBufferSize = bufferSize + 1;
-	ringBuffer->_buffer = (BYTE*)malloc(bufferSize + 1); // TODO
+	ringBuffer->_buffer = PoolAlloc(bufferSize + 1);
 }
 
 void RingBuffer_Release(RingBuffer* ringBuffer)
 {
-	// TODO
+	PoolFree(ringBuffer);
 }
 
 void RingBuffer_ClearBuffer(RingBuffer* ringBuffer)
@@ -154,7 +154,7 @@ DWORD RingBuffer_DirectEnqueueSize(RingBuffer* ringBuffer, LONG front, LONG rear
 {
 	DWORD maxBufferSize = ringBuffer->_maxBufferSize;
 
-	if (front < rear)
+	if (front <= rear)
 	{
 		return maxBufferSize - rear;
 	}

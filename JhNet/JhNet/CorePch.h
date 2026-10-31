@@ -12,6 +12,7 @@ typedef enum
 	IOTYPE_CONNECT
 } IoType;
 
+#include "Global.h"
 #include "Allocator.h"
 #include "SpinLock.h"
 #include <stdlib.h>

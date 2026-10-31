@@ -67,9 +67,9 @@ void MemoryPool_Release(MemoryPool* pool)
             MemoryHeader* header = (MemoryHeader*)(arena->_arena + pos);
             if (header->_allocSize != 0)
             {
-                printf("Memory Leak Detected!\n");
-                printf("Bucket Size : %d", pool->_bucketSize);
-                printf("%s : %d", header->_fileName, header->_lineNum);
+                wprintf(L"Memory Leak Detected!\n");
+                wprintf(L"Bucket Size : %d", pool->_bucketSize);
+                wprintf(L"%hs : %d", header->_fileName, header->_lineNum);
             }
 
             pos += pool->_bucketSize;
