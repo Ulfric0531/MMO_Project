@@ -12,7 +12,6 @@ typedef struct JhNet
 {
 	SOCKET			_socket;
 	SOCKADDR_IN		_serverAddr;
-	OverlappedEx	_acceptOverlapped;
 	OverlappedEx	_connectOverlapped;
 	HANDLE			_mainIocp;
 	HANDLE			_acceptDisconnectIocp;
@@ -33,7 +32,7 @@ void		JhNet_TrySendPost(Peer* peer, BYTE* buffer, DWORD size);
 void		JhNet_SendPost(Peer* peer);
 void		JhNet_ConnectPost(Peer* peer);
 void		JhNet_DisconnectPost(Peer* peer);
-void		JhNet_AcceptPost();
+void		JhNet_AcceptPost(JhNet netManager);
 void		JhNet_RecvComplete(Peer* peer, DWORD completedBytes, BOOL isIoCanceled);
 void		JhNet_SendComplete(Peer* peer, DWORD completedBytes, BOOL isIoCanceled);
 void		JhNet_ConnectComplete(Peer* peer);

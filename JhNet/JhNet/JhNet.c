@@ -21,7 +21,6 @@ JhNet* JhNet_MakeNetManager(WCHAR* serverIp, WORD serverPort, DWORD threadCount,
 	switch (netMode)
 	{
 	case NETMODE_SERVER:
-		OverlappedEx_Init(&jhNet->_acceptOverlapped, IOTYPE_ACCEPT);
 		jhNet->_acceptDisconnectIocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 1);
 		memset(&jhNet->_serverAddr, 0, sizeof(jhNet->_serverAddr));
 		jhNet->_serverAddr.sin_family = AF_INET;
@@ -63,7 +62,7 @@ JhNet* JhNet_MakeNetManager(WCHAR* serverIp, WORD serverPort, DWORD threadCount,
 		break;
 
 	case NETMODE_CLIENT:
-		OverlappedEx_Init(&jhNet->_connectOverlapped, IOTYPE_CONNECT);
+		OverlappedEx_Init(&jhNet->_connectOverlapped, IOTYPE_CONNECT, 0);
 		memset(&jhNet->_serverAddr, 0, sizeof(jhNet->_serverAddr));
 		jhNet->_serverAddr.sin_family = AF_INET;
 		jhNet->_serverAddr.sin_port = htons(serverPort);
@@ -145,7 +144,7 @@ void JhNet_RecvPost(Peer* peer)
 	DWORD numOfBytes = 0;
 	DWORD flags = 0;
 
-	OverlappedEx_Clear(&peer->_recvOverlap);
+	OverlappedEx_Clear((OverlappedEx*)&peer->_recvOverlap);
 
 	LONG front = RingBuffer_GetFrontIndex(&peer->_recvBuffer);
 	LONG rear = RingBuffer_GetRearIndex(&peer->_recvBuffer);
@@ -230,7 +229,7 @@ void JhNet_SendPost(Peer* peer)
 	DWORD numOfBytes;
 	DWORD flags;
 	DWORD count = 0;
-	OverlappedEx_Clear(&peer->_sendOverlap);
+	OverlappedEx_Clear((OverlappedEx*)&peer->_sendOverlap);
 
 	AcquireSRWLockExclusive(&peer->_emergencyBufferLock);
 	if (&peer->_emergencyBufferHead != NULL)
@@ -308,8 +307,28 @@ void JhNet_DisconnectPost(Peer* peer)
 	}
 }
 
-void JhNet_AcceptPost()
+void JhNet_AcceptPost(JhNet* netManager)
 {
+	int retVal;
+	int errCode;
+	DWORD bytesReceived;
+	SOCKET clientSock = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
+	AcceptOverlap* acceptOverlapped = PoolAlloc(sizeof(AcceptOverlap));
+	OverlappedEx_Init(acceptOverlapped, IOTYPE_ACCEPT, clientSock);
+	OverlappedEx_Clear((OverlappedEx*)acceptOverlapped);
+
+	retVal = JhNet_AcceptEx(netManager->_socket, clientSock, acceptOverlapped->_addr, 0, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &bytesReceived, (OVERLAPPED*)acceptOverlapped);
+	if (retVal == FALSE)
+	{
+		errCode = WSAGetLastError();
+		if (errCode != WSA_IO_PENDING)
+		{
+			printf("AcceptEx False! Error Code : %d\n", errCode);
+			JhNet_AcceptPost(netManager);
+		}
+	}
+
+
 }
 
 void JhNet_RecvComplete(Peer* peer, DWORD completedBytes, BOOL isIoCanceled)
