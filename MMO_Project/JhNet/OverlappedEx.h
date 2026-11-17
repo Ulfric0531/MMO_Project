@@ -1,7 +1,7 @@
 #pragma once
-//#include "Enum.h"
 
 typedef struct EmergencyBuffer EmergencyBuffer;
+typedef struct Peer Peer;
 typedef enum IoType IoType;
 
 typedef struct OverlappedEx
@@ -29,10 +29,18 @@ typedef struct DisconnectOverlap
 typedef struct AcceptOverlap
 {
 	OverlappedEx	_overlappedEx;
-	char			_addr[(sizeof(SOCKADDR_IN) + 16) * 2];
+	BYTE			_addr[(sizeof(SOCKADDR_IN) + 16) * 2];
 	SOCKET			_clientSock;
+	Peer*			_peer;
 } AcceptOverlap;
 
-void		OverlappedEx_Init(OverlappedEx* out_OverlappedEx, IoType ioType, SOCKET socket);
+typedef struct ConnectOverlap
+{
+	OverlappedEx	_overlappedEx;
+	const SOCKADDR	_serverAddr;
+	SOCKET			_clientSock;
+} ConnectOverlap;
+
+void		OverlappedEx_Init(OverlappedEx* out_OverlappedEx, IoType ioType, SOCKET socket, Peer* peer);
 void		OverlappedEx_Release(OverlappedEx* out_OverlappedEx);
 void		OverlappedEx_Clear(OverlappedEx* out_OverlappedEx);

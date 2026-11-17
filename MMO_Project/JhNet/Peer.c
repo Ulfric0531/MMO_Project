@@ -4,14 +4,14 @@ void Peer_Init(Peer* out_Peer, SOCKET socket, SOCKADDR_IN addr, DWORD64 id, DWOR
 {
 	InitializeSRWLock(&out_Peer->_sendBufferLock);
 	out_Peer->_socket = socket;
-	out_Peer->_addr = addr;
+	memcpy(&out_Peer->_addr, &addr, sizeof(SOCKADDR_IN));
 	out_Peer->_id = id;
 	out_Peer->_index = index;
 	RingBuffer_Init(&out_Peer->_recvBuffer, DEFAULT_RECVBUFF_SIZE);
 	RingBuffer_Init(&out_Peer->_sendBuffer, DEFAULT_SENDBUFF_SIZE);
-	OverlappedEx_Init(&out_Peer->_sendOverlap, IOTYPE_SEND);
-	OverlappedEx_Init(&out_Peer->_recvOverlap, IOTYPE_RECV);
-	OverlappedEx_Init(&out_Peer->_disconnectOverlap, IOTYPE_DISCONNECT);
+	OverlappedEx_Init(&out_Peer->_sendOverlap, IOTYPE_SEND, 0, NULL);
+	OverlappedEx_Init(&out_Peer->_recvOverlap, IOTYPE_RECV, 0, NULL);
+	OverlappedEx_Init(&out_Peer->_disconnectOverlap, IOTYPE_DISCONNECT, 0, NULL);
 	out_Peer->_refCount = 1;  // for WSARecv
 	out_Peer->_isConnected = 1;
 	out_Peer->_onSend = 0;

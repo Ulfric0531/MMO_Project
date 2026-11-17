@@ -12,7 +12,6 @@ typedef enum
 	IOTYPE_CONNECT
 } IoType;
 
-#include "Global.h"
 #include "Allocator.h"
 #include "SpinLock.h"
 #include <stdlib.h>
@@ -39,8 +38,10 @@ typedef enum NetMode
 	NETMODE_SERVER
 } NetMode;
 
-extern LPFN_ACCEPTEX		JhNet_AcceptEx;
-extern LPFN_CONNECTEX		JhNet_ConnectEx;
-extern LPFN_DISCONNECTEX	JhNet_DisconnectEx;
+extern LPFN_ACCEPTEX				JhNet_AcceptEx;
+extern LPFN_CONNECTEX				JhNet_ConnectEx;
+extern LPFN_DISCONNECTEX			JhNet_DisconnectEx;
+extern LPFN_GETACCEPTEXSOCKADDRS	JhNet_GetAcceptExSockaddrs;
+
 
 

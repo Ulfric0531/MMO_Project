@@ -144,7 +144,6 @@
     <ClInclude Include="CorePch.h" />
     <ClInclude Include="ErrorHandler.h" />
     <ClInclude Include="framework.h" />
-    <ClInclude Include="Global.h" />
     <ClInclude Include="JhNet_Include.h" />
     <ClInclude Include="MemoryManager.h" />
     <ClInclude Include="MemoryPool.h" />
@@ -159,6 +158,7 @@
     <ClCompile Include="Allocator.c" />
     <ClCompile Include="CorePch.c" />
     <ClCompile Include="dllmain.c" />
+    <ClCompile Include="Global.c" />
     <ClCompile Include="JhNet_Include.c" />
     <ClCompile Include="MemoryManager.c" />
     <ClCompile Include="MemoryPool.c" />

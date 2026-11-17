@@ -1,8 +1,8 @@
 #include "pch.h"
 
-void OverlappedEx_Init(OverlappedEx* out_OverlappedEx, IoType ioType, SOCKET socket)
+void OverlappedEx_Init(OverlappedEx* out_OverlappedEx, IoType ioType, SOCKET socket, Peer* peer)
 {
-	memset(out_OverlappedEx, 0, sizeof(OVERLAPPED));
+	ZeroMemory(out_OverlappedEx, sizeof(OVERLAPPED));
 	out_OverlappedEx->_ioType = ioType;
 
 	switch (ioType)
@@ -11,19 +11,19 @@ void OverlappedEx_Init(OverlappedEx* out_OverlappedEx, IoType ioType, SOCKET soc
 		break;
 	case IOTYPE_SEND:
 	{
-		SendOverlap* sendOverlap = out_OverlappedEx;
-		sendOverlap->_onFlightList = NULL;
+		((SendOverlap*)out_OverlappedEx)->_onFlightList = NULL;
 		break;
 	}
 	case IOTYPE_ACCEPT:
 	{
-		AcceptOverlap* acceptOverlap = out_OverlappedEx;
-		acceptOverlap->_clientSock = socket;
-	}
+		((AcceptOverlap*)out_OverlappedEx)->_clientSock = socket;
+		((AcceptOverlap*)out_OverlappedEx)->_peer = peer;
 		break;
+	}	
 	case IOTYPE_DISCONNECT:
 		break;
 	case IOTYPE_CONNECT:
+		((ConnectOverlap*)out_OverlappedEx)->_clientSock = socket;
 		break;
 	}
 	

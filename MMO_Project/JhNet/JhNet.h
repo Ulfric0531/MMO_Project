@@ -12,13 +12,12 @@ typedef struct JhNet
 {
 	SOCKET			_socket;
 	SOCKADDR_IN		_serverAddr;
-	OverlappedEx	_connectOverlapped;
 	HANDLE			_mainIocp;
 	HANDLE			_acceptDisconnectIocp;
 	Peer*			_peerList[MAX_PEER_COUNT];
 	SRWLOCK			_peerListLock;
 	DWORD			_maxPeerCount;
-	DWORD			_currentPeerCount;
+	volatile LONG	_currentPeerCount;
 	NetMode			_netMode;
 } JhNet;
 
@@ -30,13 +29,13 @@ void		JhNet_InitWinSockEx();
 void		JhNet_RecvPost(Peer* peer);
 void		JhNet_TrySendPost(Peer* peer, BYTE* buffer, DWORD size);
 void		JhNet_SendPost(Peer* peer);
-void		JhNet_ConnectPost(Peer* peer);
+BOOL		JhNet_ConnectPost(JhNet* netManager, ConnectOverlap* reservedOverlap);
 void		JhNet_DisconnectPost(Peer* peer);
-void		JhNet_AcceptPost(JhNet netManager);
+void		JhNet_AcceptPost(JhNet* netManager, AcceptOverlap* reservedOverlap);
 void		JhNet_RecvComplete(Peer* peer, DWORD completedBytes, BOOL isIoCanceled);
 void		JhNet_SendComplete(Peer* peer, DWORD completedBytes, BOOL isIoCanceled);
-void		JhNet_ConnectComplete(Peer* peer);
-void		JhNet_DisconnectComplete(Peer* peer);
-void		JhNet_AcceptComplete();
+void		JhNet_ConnectComplete(JhNet* netManager, ConnectOverlap* overlap, BOOL isIoCanceled);
+void		JhNet_DisconnectComplete(JhNet* netManager, Peer* peer, BOOL isIoCanceled);
+void		JhNet_AcceptComplete(JhNet* netManager, AcceptOverlap* overlap, BOOL isIoCanceled);
 
-void		JhNet_DispatchIocp(HANDLE iocpHandle);
+void		JhNet_DispatchIocp(HANDLE iocpHandle, JhNet* netManager);

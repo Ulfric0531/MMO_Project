@@ -6,7 +6,10 @@
 
 typedef struct MemoryPool MemoryPool;
 
-DLL_PROC void			JhNet_Send(BYTE* buffer, DWORD size);
+DLL_PROC LONG JhNet_ServerServiceStart(DWORD maxPeerCount, DWORD iocpThreadCount);
+DLL_PROC LONG JhNet_ClientServiceStart(DWORD maxPeerCount, DWORD iocpThreadCount);
+DLL_PROC BOOL JhNet_Connect(LONG serviceHandle, WCHAR* serverIp, WORD serverPort);
+DLL_PROC BOOL JhNet_Send(BYTE* buffer, DWORD size);
 
 // ----------Recommended only for C/C++ projects.----------
 DLL_PROC MemoryPool*	JhNet_MakeMemoryPool(); 

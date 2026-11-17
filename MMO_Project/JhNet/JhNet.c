@@ -1,8 +1,7 @@
 #include "pch.h"
 
-LPFN_ACCEPTEX		JhNet_AcceptEx;
-LPFN_CONNECTEX		JhNet_ConnectEx;
-LPFN_DISCONNECTEX	JhNet_DisconnectEx;
+DWORD64 serverMode_peerId = 0;
+DWORD64 clientMode_peerId = 0;
 
 JhNet* JhNet_MakeNetManager(WCHAR* serverIp, WORD serverPort, DWORD threadCount, NetMode netMode)
 {
@@ -62,7 +61,6 @@ JhNet* JhNet_MakeNetManager(WCHAR* serverIp, WORD serverPort, DWORD threadCount,
 		break;
 
 	case NETMODE_CLIENT:
-		OverlappedEx_Init(&jhNet->_connectOverlapped, IOTYPE_CONNECT, 0);
 		memset(&jhNet->_serverAddr, 0, sizeof(jhNet->_serverAddr));
 		jhNet->_serverAddr.sin_family = AF_INET;
 		jhNet->_serverAddr.sin_port = htons(serverPort);
@@ -87,9 +85,9 @@ BOOL JhNet_AddPeer(JhNet* netManager, Peer* peer)
 		{
 			netManager->_peerList[i] = peer;
 			peer->_index = i;
-			peer->_id = g_peerId;
+			peer->_id = serverMode_peerId;
 			retVal = TRUE;
-			++g_peerId;
+			++serverMode_peerId;
 			++netManager->_currentPeerCount;
 			goto exit;
 		}
@@ -125,11 +123,13 @@ void JhNet_InitWinSockEx()
 	GUID connectExID = WSAID_CONNECTEX;
 	GUID disconnectExID = WSAID_DISCONNECTEX;
 	GUID acceptExID = WSAID_ACCEPTEX;
+	GUID getAcceptExSockaddrsID = WSAID_GETACCEPTEXSOCKADDRS;
 	DWORD bytes;
 	SOCKET dummySock = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
 	WSAIoctl(dummySock, SIO_GET_EXTENSION_FUNCTION_POINTER, &connectExID, sizeof(connectExID), &JhNet_ConnectEx, sizeof(JhNet_ConnectEx), &bytes, NULL, NULL);
 	WSAIoctl(dummySock, SIO_GET_EXTENSION_FUNCTION_POINTER, &disconnectExID, sizeof(disconnectExID), &JhNet_DisconnectEx, sizeof(JhNet_DisconnectEx), &bytes, NULL, NULL);
 	WSAIoctl(dummySock, SIO_GET_EXTENSION_FUNCTION_POINTER, &acceptExID, sizeof(acceptExID), &JhNet_AcceptEx, sizeof(JhNet_AcceptEx), &bytes, NULL, NULL);
+	WSAIoctl(dummySock, SIO_GET_EXTENSION_FUNCTION_POINTER, &getAcceptExSockaddrsID, sizeof(getAcceptExSockaddrsID), &JhNet_GetAcceptExSockaddrs, sizeof(JhNet_GetAcceptExSockaddrs), &bytes, NULL, NULL);
 }
 
 void JhNet_RecvPost(Peer* peer)
@@ -162,8 +162,8 @@ void JhNet_RecvPost(Peer* peer)
 		errCode = WSAGetLastError();
 		if (errCode != WSA_IO_PENDING)
 		{
+			printf("JhNet_RecvPost() Failed! Error Code : %d\n", errCode);
 			JhNet_DisconnectPost(peer);
-
 			Peer_DecRefCount(peer);
 		}
 	}
@@ -271,16 +271,45 @@ void JhNet_SendPost(Peer* peer)
 		errCode = WSAGetLastError();
 		if (errCode != WSA_IO_PENDING)
 		{
+			printf("JhNet_SendPost() Failed! Error Code : %d\n", errCode);
 			JhNet_DisconnectPost(peer);
-
 			Peer_DecRefCount(peer);
 		}
 	}
 }
 
-void JhNet_ConnectPost(Peer* peer)
+BOOL JhNet_ConnectPost(JhNet* netManager, ConnectOverlap* reservedOverlap)
 {
-	if ()
+	if (netManager->_netMode != NETMODE_CLIENT)
+	{
+		return FALSE;
+	}
+
+	int retVal;
+	int errCode;
+	DWORD bytesSent;
+	if (reservedOverlap == NULL)
+	{
+		SOCKET socket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
+		reservedOverlap = PoolAlloc(sizeof(ConnectOverlap));
+		OverlappedEx_Init((OverlappedEx*)reservedOverlap, IOTYPE_CONNECT, socket, NULL);
+		OverlappedEx_Clear((OverlappedEx*)reservedOverlap);
+	}
+
+	retVal = JhNet_ConnectEx(reservedOverlap->_clientSock, &netManager->_serverAddr, sizeof(SOCKADDR_IN), NULL, 0, &bytesSent, (LPOVERLAPPED)reservedOverlap);
+	if (retVal == SOCKET_ERROR)
+	{
+		errCode = WSAGetLastError();
+		if (errCode != WSA_IO_PENDING)
+		{
+			printf("JhNet_ConnectPost() Failed! Error Code : %d\n", errCode);
+			closesocket(reservedOverlap->_clientSock);
+			OverlappedEx_Release((OverlappedEx*)reservedOverlap);
+			return FALSE;
+		}
+	}
+
+
 }
 
 void JhNet_DisconnectPost(Peer* peer)
@@ -301,34 +330,43 @@ void JhNet_DisconnectPost(Peer* peer)
 		errCode = WSAGetLastError();
 		if (errCode != WSA_IO_PENDING)
 		{
+			printf("JhNet_DisconnectPost() Failed! Error Code : %d\n", errCode);
 			closesocket(peer->_socket);
 			Peer_DecRefCount(peer);
 		}
 	}
 }
 
-void JhNet_AcceptPost(JhNet* netManager)
+void JhNet_AcceptPost(JhNet* netManager, AcceptOverlap* reservedOverlap)
 {
 	int retVal;
 	int errCode;
 	DWORD bytesReceived;
-	SOCKET clientSock = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
-	AcceptOverlap* acceptOverlapped = PoolAlloc(sizeof(AcceptOverlap));
-	OverlappedEx_Init(acceptOverlapped, IOTYPE_ACCEPT, clientSock);
-	OverlappedEx_Clear((OverlappedEx*)acceptOverlapped);
+	
 
-	retVal = JhNet_AcceptEx(netManager->_socket, clientSock, acceptOverlapped->_addr, 0, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &bytesReceived, (OVERLAPPED*)acceptOverlapped);
+	if (reservedOverlap == NULL)
+	{
+		SOCKET clientSock = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
+		Peer* reservedPeer = PoolAlloc(sizeof(Peer));
+		reservedOverlap = PoolAlloc(sizeof(AcceptOverlap));
+		OverlappedEx_Init(reservedOverlap, IOTYPE_ACCEPT, clientSock, reservedPeer);
+		OverlappedEx_Clear((OverlappedEx*)reservedOverlap);
+	}
+	else if (reservedOverlap->_peer == NULL)
+	{
+		reservedOverlap->_peer = PoolAlloc(sizeof(Peer));
+	}
+
+	retVal = JhNet_AcceptEx(netManager->_socket, reservedOverlap->_clientSock, reservedOverlap->_addr, 0, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &bytesReceived, (OVERLAPPED*)reservedOverlap);
 	if (retVal == FALSE)
 	{
 		errCode = WSAGetLastError();
 		if (errCode != WSA_IO_PENDING)
 		{
-			printf("AcceptEx False! Error Code : %d\n", errCode);
-			JhNet_AcceptPost(netManager);
+			printf("JhNet_AcceptPost() Failed! Error Code : %d\n", errCode);
+			JhNet_AcceptPost(netManager, reservedOverlap);
 		}
 	}
-
-
 }
 
 void JhNet_RecvComplete(Peer* peer, DWORD completedBytes, BOOL isIoCanceled)
@@ -373,11 +411,43 @@ void JhNet_SendComplete(Peer* peer, DWORD completedBytes, BOOL isIoCanceled)
 	Peer_DecRefCount(peer);
 }
 
-void JhNet_ConnectComplete(Peer* peer)
+void JhNet_ConnectComplete(JhNet* netManager, ConnectOverlap* overlap, BOOL isIoCanceled)
 {
+	if (isIoCanceled == TRUE)
+	{
+		closesocket(overlap->_clientSock);
+		OverlappedEx_Release(overlap);
+		return;
+	}
+
+	DWORD i;
+	DWORD index;
+	DWORD maxPeerCount = netManager->_maxPeerCount;
+	BOOL retVal;
+
+	for (i = 0; i < maxPeerCount; ++i)
+	{
+		if (netManager->_peerList[i] == NULL)
+		{
+			index = i;
+			break;
+		}
+	}
+	if (index == maxPeerCount)
+	{
+		closesocket(overlap->_clientSock);
+		return;
+	}
+	Peer* peer = PoolAlloc(sizeof(Peer));
+	Peer_Init(peer, overlap->_clientSock, netManager->_serverAddr, clientMode_peerId, index);
+	netManager->_peerList[index] = peer;
+	++clientMode_peerId;
+	InterlockedIncrement(&netManager->_currentPeerCount);
+	// 콜백함수 OnConnect() 호출.
+
 }
 
-void JhNet_DisconnectComplete(Peer* peer)
+void JhNet_DisconnectComplete(JhNet* netManager, Peer* peer, BOOL isIoCanceled)
 {
 	closesocket(peer->_socket);
 	// 컨텐츠 서버의 콜백함수 호출
@@ -385,23 +455,67 @@ void JhNet_DisconnectComplete(Peer* peer)
 	Peer_DecRefCount(peer);
 }
 
-void JhNet_AcceptComplete()
+void JhNet_AcceptComplete(JhNet* netManager, AcceptOverlap* overlap, BOOL isIoCanceled)
 {
+	if (isIoCanceled == TRUE)
+	{
+		Peer_Release(overlap->_peer);
+		OverlappedEx_Release((OverlappedEx*)overlap);
+		return;
+	}
+
+	DWORD i;
+	DWORD index;
+	DWORD maxPeerCount = netManager->_maxPeerCount;
+	LPSOCKADDR localAddr;
+	LPSOCKADDR remoteAddr;
+	DWORD localAddrLen;
+	DWORD remoteAddrLen;
+	SOCKADDR_IN clientAddr;
+	BOOL retVal;
+
+	for (i = 0; i < maxPeerCount; ++i)
+	{
+		if (netManager->_peerList[i] == NULL)
+		{
+			index = i;
+			break;
+		}
+	}
+	if (index == maxPeerCount)
+	{
+		//  TODO : 대기열 리스트 처리
+		closesocket(overlap->_clientSock);
+		JhNet_AcceptPost(netManager, overlap);
+		return;
+	}
+
+	JhNet_GetAcceptExSockaddrs(overlap->_addr, 0, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &localAddr, &localAddrLen, &remoteAddr, &remoteAddrLen);
+	memcpy(&clientAddr, remoteAddr, sizeof(SOCKADDR_IN));
+
+	Peer_Init(overlap->_peer, overlap->_clientSock, clientAddr, serverMode_peerId, index);
+	netManager->_peerList[index] = overlap->_peer;
+	++serverMode_peerId;
+	InterlockedIncrement(&netManager->_currentPeerCount);
+	overlap->_peer = NULL;
+	// 콜백함수 OnAccept() 호출.
+	JhNet_AcceptPost(netManager, overlap);
+
 }
 
-void JhNet_DispatchIocp(HANDLE iocpHandle)
+void JhNet_DispatchIocp(HANDLE iocpHandle, JhNet* netManager)
 {
 	DWORD errCode;
 	BOOL retVal;
 	DWORD completedBytes = 0;
 	Peer* peer = NULL;
-	OverlappedEx* ioEvent = NULL;
+	OverlappedEx* overlap = NULL;
 
-	retVal = GetQueuedCompletionStatus(iocpHandle, &completedBytes, (PULONG_PTR)&peer, (LPOVERLAPPED*)&ioEvent, INFINITE);
+	retVal = GetQueuedCompletionStatus(iocpHandle, &completedBytes, (PULONG_PTR)&peer, (LPOVERLAPPED*)&overlap, INFINITE);
 	if (retVal == FALSE)
 	{
 		errCode = GetLastError();
-		if (ioEvent == NULL)
+		if (overlap == NULL)
 		{
 			wprintf(L"Overlapped is NULL in GQCS return : %d\n", errCode);
 			// TODO : 서버 종료
@@ -415,7 +529,7 @@ void JhNet_DispatchIocp(HANDLE iocpHandle)
 				return;
 			}
 
-			switch (ioEvent->_ioType)
+			switch (overlap->_ioType)
 			{
 			case IOTYPE_RECV:
 				JhNet_RecvComplete(peer, completedBytes, TRUE);
@@ -424,12 +538,13 @@ void JhNet_DispatchIocp(HANDLE iocpHandle)
 				JhNet_SendComplete(peer, completedBytes, TRUE);
 				break;
 			case IOTYPE_ACCEPT:
+				JhNet_AcceptComplete(netManager, peer, TRUE);
 				break;
 			case IOTYPE_DISCONNECT:
-				JhNet_DisconnectComplete(peer);
+				JhNet_DisconnectComplete(netManager, peer, TRUE);
 				break;
 			case IOTYPE_CONNECT:
-				JhNet_ConnectComplete(peer);
+				JhNet_ConnectComplete(netManager, (ConnectOverlap*)overlap, TRUE);
 				break;
 			default:
 				break;
@@ -438,7 +553,7 @@ void JhNet_DispatchIocp(HANDLE iocpHandle)
 	}
 	else
 	{
-		switch (ioEvent->_ioType)
+		switch (overlap->_ioType)
 		{
 		case IOTYPE_RECV:
 			JhNet_RecvComplete(peer, completedBytes, FALSE);
@@ -447,12 +562,13 @@ void JhNet_DispatchIocp(HANDLE iocpHandle)
 			JhNet_SendComplete(peer, completedBytes, FALSE);
 			break;
 		case IOTYPE_ACCEPT:
+			JhNet_AcceptComplete(netManager, peer, FALSE);
 			break;
 		case IOTYPE_DISCONNECT:
-			JhNet_DisconnectComplete(peer);
+			JhNet_DisconnectComplete(netManager, peer, FALSE);
 			break;
 		case IOTYPE_CONNECT:
-			JhNet_ConnectComplete(peer);
+			JhNet_ConnectComplete(netManager, (ConnectOverlap*)overlap, FALSE);
 			break;
 		default:
 			break;

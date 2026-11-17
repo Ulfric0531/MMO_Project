@@ -2,9 +2,9 @@
 #define DLL_EXPORT
 #include "JhNet_Include.h"
 
-DLL_PROC void JhNet_Send(BYTE* buffer, DWORD size)
+DLL_PROC BOOL JhNet_Send(BYTE* buffer, DWORD size)
 {
-	return;
+	return TRUE;
 }
 
 DLL_PROC MemoryPool* JhNet_MakeMemoryPool()
