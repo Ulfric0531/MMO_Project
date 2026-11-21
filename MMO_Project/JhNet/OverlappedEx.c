@@ -31,6 +31,30 @@ void OverlappedEx_Init(OverlappedEx* out_OverlappedEx, IoType ioType, SOCKET soc
 
 void OverlappedEx_Release(OverlappedEx* out_OverlappedEx)
 {
+	switch (out_OverlappedEx->_ioType)
+	{
+	case IOTYPE_RECV:
+	{
+		break;
+	}
+	case IOTYPE_SEND:
+	{
+		break;
+	}
+	case IOTYPE_ACCEPT:
+	{
+		break;
+	}
+	case IOTYPE_DISCONNECT:
+	{
+		break;
+	}
+	case IOTYPE_CONNECT:
+	{
+		break;
+	}
+	}
+	PoolFree(out_OverlappedEx);
 }
 
 void OverlappedEx_Clear(OverlappedEx* out_OverlappedEx)

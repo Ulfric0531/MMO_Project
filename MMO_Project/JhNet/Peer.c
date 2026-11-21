@@ -24,6 +24,18 @@ void Peer_Init(Peer* out_Peer, SOCKET socket, SOCKADDR_IN addr, DWORD64 id, DWOR
 
 void Peer_Release(Peer* peer)
 {
+	OverlappedEx_Release((OverlappedEx*)&peer->_sendOverlap);
+	OverlappedEx_Release((OverlappedEx*)&peer->_recvOverlap);
+	OverlappedEx_Release((OverlappedEx*)&peer->_disconnectOverlap);
+	RingBuffer_Release(&peer->_recvBuffer);
+	RingBuffer_Release(&peer->_sendBuffer);
+	while (peer->_emergencyBufferHead == NULL)
+	{
+		EmergencyBuffer* next = peer->_emergencyBufferHead->_next;
+		PoolFree(peer->_emergencyBufferHead);
+		peer->_emergencyBufferHead = next;
+	}
+	PoolFree(peer);
 }
 
 void Peer_IncRefCount(Peer* peer)
